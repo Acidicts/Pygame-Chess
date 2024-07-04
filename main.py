@@ -30,11 +30,17 @@ class Game:
             "king": load_image("black_king.png"),
         }
         self.board = []
+
         for i in range(8):
-            for j in range(8):
-                self.board.append(Void(i * 80, j * 80))
-        for tile in self.board:
-            tile = Pawn(0, self.board.index(tile) * 80, self.white_assets["pawn"])
+            for j in range(7):
+                if j == 6:
+                    self.board.append(Pawn(i * 80, j * 80, self.white_assets["pawn"]))
+                    self.board[-1].direction = 1
+                elif j == 1:
+                    self.board.append(Pawn(i * 80, j * 80, self.black_assets["pawn"]))
+                    self.board[-1].direction = -1
+                else:
+                    self.board.append(Void(i * 80, j * 80))
 
     def draw_board(self):
         for i in range(8):
@@ -45,8 +51,11 @@ class Game:
 
     def run(self):
         running = True
-        while running:
+        clock = pygame.time.Clock()
+        selected_piece = None  # Track the currently selected piece
 
+        while running:
+            clock.tick(60)
             win.fill((255, 255, 255))
             self.draw_board()
 
@@ -54,15 +63,32 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
 
+                if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    pos = pygame.mouse.get_pos()
+                    if selected_piece:
+                        # Move the selected piece to the new location
+                        grid_pos = get_grid_square(pos)
+                        new_x, new_y = grid_pos[0] * 80, grid_pos[1] * 80
+                        selected_piece.x = new_x
+                        selected_piece.y = new_y
+                        selected_piece.rect.topleft = (new_x, new_y)
+                        selected_piece.first_move = False
+                        selected_piece.selected = False
+                        selected_piece = None  # Deselect the piece after moving
+                    else:
+                        # Select a piece
+                        for piece in self.board:
+                            if piece.rect.collidepoint(pos):
+                                piece.selected = True
+                                selected_piece = piece
+                                break  # Stop the loop once the piece is found and selected
+
             for piece in self.board:
-                try:
-                    piece.draw(win)
-                finally:
-                    pass
+                piece.draw(win)
+                if piece.selected:
+                    piece.show_moves(win)
 
-            win.blit(self.white_assets['pawn'], (0, 560))
-
-            pygame.display.update()
+            pygame.display.flip()
 
 
 game = Game()
