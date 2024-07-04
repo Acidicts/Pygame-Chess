@@ -59,37 +59,36 @@ class Game:
             win.fill((255, 255, 255))
             self.draw_board()
 
+            for piece in self.board:
+                piece.draw(win)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
 
                 if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                     pos = pygame.mouse.get_pos()
-                    if selected_piece:
-                        # Move the selected piece to the new location
-                        grid_pos = get_grid_square(pos)
-                        new_x, new_y = grid_pos[0] * 80, grid_pos[1] * 80
-                        selected_piece.x = new_x
-                        selected_piece.y = new_y
-                        selected_piece.rect.topleft = (new_x, new_y)
-                        selected_piece.first_move = False
+                    clicked_piece = None
+                    for piece in self.board:
+                        if piece.clicked(pos):
+                            clicked_piece = piece
+                            break
+
+                    if selected_piece and clicked_piece == selected_piece:
                         selected_piece.selected = False
-                        selected_piece = None  # Deselect the piece after moving
-                    else:
-                        # Select a piece
-                        for piece in self.board:
-                            if piece.rect.collidepoint(pos):
-                                piece.selected = True
-                                selected_piece = piece
-                                break  # Stop the loop once the piece is found and selected
+                        selected_piece = None
+                    elif clicked_piece and not selected_piece:
+                        clicked_piece.selected = True
+                        selected_piece = clicked_piece
+                    elif selected_piece:
+                        # Validate and move the selected piece to the new location
+                        grid_pos = get_grid_square(pos)
+                        if grid_pos in selected_piece.white_moves or grid_pos in selected_piece.black_moves:
+                            selected_piece.move(pos)
+                            selected_piece.selected = False
+                            selected_piece = None
 
-            for piece in self.board:
-                piece.draw(win)
-                if piece.selected:
-                    piece.show_moves(win)
-
-            pygame.display.flip()
-
+            pygame.display.update()
 
 game = Game()
 game.run()
